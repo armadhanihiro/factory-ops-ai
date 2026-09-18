@@ -9,6 +9,8 @@ import {
     calculateTotalOutput,
 } from "./factory";
 
+import { applyScenario } from "./scenarios";
+
 function randomBetween(min: number, max: number): number {
     return Math.random() * (max - min) + min;
 }
@@ -50,11 +52,19 @@ export function tickFactory(state: FactoryState): FactoryState {
         telemetry: simulateTelemetry(machine),
     }));
 
-    return {
+    let nextState: FactoryState = {
         ...state,
         timestamp: new Date().toISOString(),
         machines,
-        totalOutput: calculateTotalOutput(machines),
-        averageUtilization: calculateAverageUtilization(machines),
+    };
+
+    // Apply active simulated failure after normal
+    // telemetry fluctuation.
+    nextState = applyScenario(nextState);
+
+    return {
+        ...nextState,
+        totalOutput: calculateTotalOutput(nextState.machines),
+        averageUtilization: calculateAverageUtilization(nextState.machines),
     };
 }

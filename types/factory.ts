@@ -10,6 +10,31 @@ export type MachineType =
     | "EXTRUDER"
     | "PACKAGING";
 
+export type ScenarioType =
+    | "BEARING_DEGRADATION"
+    | "QUALITY_DRIFT"
+    | "MATERIAL_SHORTAGE";
+
+export type ScenarioStatus =
+    | "INACTIVE"
+    | "ACTIVE"
+    | "COMPLETED";
+
+export interface ActiveScenario {
+    type: ScenarioType;
+    status: ScenarioStatus;
+    targetMachineId: string;
+    startedAt: string;
+    tick: number;
+
+    // Simulator-only ground truth.
+    // This must never be exposed to anomaly detection or AI agents.
+    groundTruth: {
+        failureMode: string;
+        rootCause: string;
+    };
+}
+
 export interface MachineTelemetry {
     machineId: string;
     timestamp: string;
@@ -53,4 +78,5 @@ export interface FactoryState {
     orders: ProductionOrder[];
     totalOutput: number;
     averageUtilization: number;
+    activeScenario?: ActiveScenario;
 }

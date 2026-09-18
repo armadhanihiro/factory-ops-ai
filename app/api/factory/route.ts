@@ -1,12 +1,9 @@
 import { NextResponse } from "next/server";
 
-import { createInitialFactoryState } from "@/lib/simulator/factory";
-import { tickFactory } from "@/lib/simulator/telemetry";
-
-let factoryState = createInitialFactoryState();
+import { advanceFactory } from "@/lib/simulator/store";
 
 export async function GET() {
-    factoryState = tickFactory(factoryState);
+  const factoryState = advanceFactory();
 
-    return NextResponse.json(factoryState);
+  return NextResponse.json(factoryState);
 }
