@@ -16,5 +16,5 @@ export async function evaluateIncidentDiagnosis(incident: Incident, factoryState
         throw new Error(`No diagnostic ground truth available for machine ${incident.machineId}`);
     }
 
-    return evaluateDiagnosticResult(diagnosticResult, groundTruth);
+    return evaluateDiagnosticResult(diagnosticResult, groundTruth, incident);
 }
