@@ -8,7 +8,6 @@ import {
 } from "@/types/factory";
 
 declare global {
-    // eslint-disable-next-line no-var
     var factorySimulatorState: FactoryState | undefined;
 }
 

@@ -22,10 +22,9 @@ export async function POST(request: NextRequest) {
         );
     }
 
-    const factoryState = startScenario(body.type);
+    startScenario(body.type);
 
     return NextResponse.json({
-        message: "Scenario started",
-        scenario: factoryState.activeScenario,
+        message: "Simulation scenario started",
     });
 }

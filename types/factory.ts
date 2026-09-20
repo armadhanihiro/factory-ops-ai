@@ -20,6 +20,35 @@ export type ScenarioStatus =
     | "ACTIVE"
     | "COMPLETED";
 
+export type OrderStatus =
+    | "QUEUED"
+    | "IN_PROGRESS"
+    | "AT_RISK"
+    | "COMPLETED";
+
+export type AnomalySeverity =
+    | "NORMAL"
+    | "WARNING"
+    | "HIGH"
+    | "CRITICAL";
+
+export interface AnomalySignal {
+    metric: string;
+    value: number;
+    baseline: number;
+    deviationPercent: number;
+    score: number;
+    message: string;
+}
+
+export interface AnomalyDetection {
+    machineId: string;
+    timestamp: string;
+    anomalyScore: number;
+    severity: AnomalySeverity;
+    signals: AnomalySignal[];
+}
+
 export interface ActiveScenario {
     type: ScenarioType;
     status: ScenarioStatus;
@@ -56,12 +85,6 @@ export interface Machine {
     telemetry: MachineTelemetry;
 }
 
-export type OrderStatus =
-    | "QUEUED"
-    | "IN_PROGRESS"
-    | "AT_RISK"
-    | "COMPLETED";
-
 export interface ProductionOrder {
     id: string;
     product: string;
@@ -79,4 +102,5 @@ export interface FactoryState {
     totalOutput: number;
     averageUtilization: number;
     activeScenario?: ActiveScenario;
+    anomalies: AnomalyDetection[];
 }

@@ -9,6 +9,8 @@ import {
     calculateTotalOutput,
 } from "./factory";
 
+import { detectFactoryAnomalies } from "@/lib/anomaly/detector";
+
 import { applyScenario } from "./scenarios";
 
 function randomBetween(min: number, max: number): number {
@@ -62,9 +64,12 @@ export function tickFactory(state: FactoryState): FactoryState {
     // telemetry fluctuation.
     nextState = applyScenario(nextState);
 
+    const anomalies = detectFactoryAnomalies(nextState.machines);
+
     return {
         ...nextState,
         totalOutput: calculateTotalOutput(nextState.machines),
         averageUtilization: calculateAverageUtilization(nextState.machines),
+        anomalies,
     };
 }

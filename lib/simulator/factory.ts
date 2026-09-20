@@ -96,6 +96,7 @@ export function createInitialFactoryState(): FactoryState {
         orders: structuredClone(orders),
         totalOutput: calculateTotalOutput(machines),
         averageUtilization: calculateAverageUtilization(machines),
+        anomalies: [],
     };
 }
 
