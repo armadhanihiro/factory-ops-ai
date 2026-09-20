@@ -32,6 +32,27 @@ export type AnomalySeverity =
     | "HIGH"
     | "CRITICAL";
 
+export type IncidentStatus =
+    | "OPEN"
+    | "INVESTIGATING"
+    | "MITIGATING"
+    | "RESOLVED";
+
+export interface IncidentTrigger {
+    anomalyScore: number;
+    signals: AnomalySignal[];
+}
+
+export interface Incident {
+    id: string;
+    machineId: string;
+    status: IncidentStatus;
+    severity: AnomalySeverity;
+    detectedAt: string;
+    updatedAt: string;
+    trigger: IncidentTrigger;
+}
+
 export interface AnomalySignal {
     metric: string;
     value: number;
@@ -101,6 +122,7 @@ export interface FactoryState {
     orders: ProductionOrder[];
     totalOutput: number;
     averageUtilization: number;
-    activeScenario?: ActiveScenario;
     anomalies: AnomalyDetection[];
+    incidents: Incident[];
+    activeScenario?: ActiveScenario;
 }

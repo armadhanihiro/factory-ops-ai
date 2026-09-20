@@ -97,6 +97,7 @@ export function createInitialFactoryState(): FactoryState {
         totalOutput: calculateTotalOutput(machines),
         averageUtilization: calculateAverageUtilization(machines),
         anomalies: [],
+        incidents: [],
     };
 }
 

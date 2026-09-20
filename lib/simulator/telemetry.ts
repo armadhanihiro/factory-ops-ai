@@ -10,6 +10,7 @@ import {
 } from "./factory";
 
 import { detectFactoryAnomalies } from "@/lib/anomaly/detector";
+import { processIncidents } from "@/lib/incidents/engine";
 
 import { applyScenario } from "./scenarios";
 
@@ -65,11 +66,14 @@ export function tickFactory(state: FactoryState): FactoryState {
     nextState = applyScenario(nextState);
 
     const anomalies = detectFactoryAnomalies(nextState.machines);
-
-    return {
+    nextState = {
         ...nextState,
         totalOutput: calculateTotalOutput(nextState.machines),
         averageUtilization: calculateAverageUtilization(nextState.machines),
         anomalies,
     };
+
+    nextState = processIncidents(nextState);
+
+    return nextState;
 }
