@@ -19,3 +19,14 @@ export interface DiagnosticEvaluation {
   provider: DiagnosticResult["provider"];
   evaluatedAt: string;
 }
+
+export interface QualityEvaluation {
+  incidentId: string;
+  machineId: string;
+  evidenceGroundingScore: number;
+  dispositionSafetyScore: number;
+  outputValidityScore: number;
+  overallScore: number;
+  provider: "mock" | "gemini";
+  evaluatedAt: string;
+}

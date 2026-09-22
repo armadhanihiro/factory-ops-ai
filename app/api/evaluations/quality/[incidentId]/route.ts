@@ -1,10 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { QualityAgent } from "@/lib/agents/quality/agent";
-import {
-    getQualityResult,
-    saveQualityResult,
-} from "@/lib/agents/quality/result-store";
+import { evaluateIncidentQuality } from "@/lib/evaluation/quality-evaluation-service";
 import { getFactoryState } from "@/lib/simulator/store";
 
 export async function GET(_request: Request, context: { params: Promise<{ incidentId: string }> }) {
@@ -23,15 +19,20 @@ export async function GET(_request: Request, context: { params: Promise<{ incide
         );
     }
 
-    const cachedAssessment = getQualityResult(incidentId);
+    try {
+        const evaluation = await evaluateIncidentQuality(incident);
 
-    if (cachedAssessment) {
-        return NextResponse.json(cachedAssessment);
+        return NextResponse.json(evaluation);
+    } catch (error) {
+        const message = error instanceof Error ? error.message : "Unable to evaluate quality assessment";
+
+        return NextResponse.json(
+            {
+                error: message,
+            },
+            {
+                status: 409,
+            }
+        );
     }
-
-    const agent = new QualityAgent();
-    const assessment = await agent.assessImpact(incident, factoryState);
-    saveQualityResult(assessment);
-
-    return NextResponse.json(assessment);
 }
