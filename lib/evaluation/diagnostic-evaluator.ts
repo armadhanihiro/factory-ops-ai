@@ -5,12 +5,10 @@ import type {
     DiagnosticGroundTruth,
 } from "@/types/evaluation";
 
+import { scoreFailureMode } from "./failure-mode-taxonomy";
+
 function clamp01(value: number): number {
     return Math.max(0, Math.min(1, value));
-}
-
-function normalizeFailureMode(value: string): string {
-    return value.trim().toLowerCase().replace(/[\s-]+/g, "_");
 }
 
 function normalizeMetric(value: string): string {
@@ -18,10 +16,7 @@ function normalizeMetric(value: string): string {
 }
 
 function evaluateDiagnosis(result: DiagnosticResult, groundTruth: DiagnosticGroundTruth): number {
-    const predicted = normalizeFailureMode(result.primaryDiagnosis.failureMode);
-    const expected = normalizeFailureMode(groundTruth.failureMode);
-
-    return predicted === expected ? 1 : 0;
+    return scoreFailureMode(result.primaryDiagnosis.failureMode, groundTruth.failureMode);
 }
 
 function evaluateEvidenceGrounding(result: DiagnosticResult, incident: Incident): number {

@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 
-import { getFactoryState } from "@/lib/simulator/store";
 import { DiagnosticAgent } from "@/lib/agents/diagnostic/agent";
+import { getDiagnosticResult, saveDiagnosticResult } from "@/lib/agents/diagnostic/result-store";
+import { getFactoryState } from "@/lib/simulator/store";
 
-export async function GET(_request: Request, context: { params: Promise<{ incidentId: string }> }) {
+export async function GET(_request: Request, context: { params: Promise<{ incidentId: string; }> }) {
     const { incidentId } = await context.params;
     const factoryState = getFactoryState();
     const incident = factoryState.incidents.find((item) => item.id === incidentId);
@@ -19,8 +20,16 @@ export async function GET(_request: Request, context: { params: Promise<{ incide
         );
     }
 
+    const cachedDiagnosis = getDiagnosticResult(incidentId);
+
+    if (cachedDiagnosis) {
+        return NextResponse.json(cachedDiagnosis);
+    }
+
     const agent = new DiagnosticAgent();
     const diagnosis = await agent.investigate(incident, factoryState);
+
+    saveDiagnosticResult(diagnosis);
 
     return NextResponse.json(diagnosis);
 }

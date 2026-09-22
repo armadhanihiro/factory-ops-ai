@@ -1,15 +1,18 @@
 import type { FactoryState, Incident } from "@/types/factory";
 import type { DiagnosticEvaluation } from "@/types/evaluation";
-import { DiagnosticAgent } from "@/lib/agents/diagnostic/agent";
+
+import { getDiagnosticResult } from "@/lib/agents/diagnostic/result-store";
+
 import { evaluateDiagnosticResult } from "./diagnostic-evaluator";
 import { resolveDiagnosticGroundTruth } from "./ground-truth";
 
 export async function evaluateIncidentDiagnosis(incident: Incident, factoryState: FactoryState): Promise<DiagnosticEvaluation> {
-    // AI runs first using sanitized operational context.
-    const agent = new DiagnosticAgent();
-    const diagnosticResult = await agent.investigate(incident, factoryState);
+    const diagnosticResult = getDiagnosticResult(incident.id);
 
-    // Ground truth is accessed only after the diagnosis exists.
+    if (!diagnosticResult) {
+        throw new Error(`No diagnostic result available for incident ${incident.id}`);
+    }
+
     const groundTruth = resolveDiagnosticGroundTruth(factoryState, incident.machineId);
 
     if (!groundTruth) {
