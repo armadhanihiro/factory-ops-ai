@@ -13,6 +13,7 @@ const context = {
     },
     analysis: {
         production: {
+            affectedOrderId: "ORD-428",
             remainingUnits: 2080,
             currentMachineCapacity: 120,
             alternatives: [
@@ -178,5 +179,43 @@ describe("RecoverySimulator", () => {
         );
 
         expect(result.outcomes[0].feasible).toBe(false);
+    });
+
+    it("rejects actions targeting the wrong machine", () => {
+        const result = simulator.simulate(
+            [
+                plan("INVALID-MACHINE", [
+                    {
+                        type: "PAUSE_MACHINE",
+                        machineId: "M-99",
+                        reasoning: "Pause hallucinated machine",
+                    },
+                ]),
+            ],
+            context,
+        );
+        const outcome = result.outcomes[0];
+
+        expect(outcome.feasible).toBe(false);
+        expect(outcome.constraintViolations).toContain("PAUSE_MACHINE must target affected machine M-02");
+    });
+
+    it("rejects actions targeting the wrong order", () => {
+        const result = simulator.simulate(
+            [
+                plan("INVALID-ORDER", [
+                    {
+                        type: "HOLD_OUTPUT",
+                        orderId: "ORD-999",
+                        reasoning: "Hold hallucinated order",
+                    },
+                ]),
+            ],
+            context,
+        );
+        const outcome = result.outcomes[0];
+
+        expect(outcome.feasible).toBe(false);
+        expect(outcome.constraintViolations).toContain("HOLD_OUTPUT must target affected order ORD-428");
     });
 });
