@@ -42,3 +42,16 @@ export interface MaintenanceEvaluation {
   provider: "mock" | "gemini";
   evaluatedAt: string;
 }
+
+export interface ProductionEvaluation {
+  incidentId: string;
+  machineId: string;
+  deterministicFactsScore: number;
+  alternativeConsistencyScore: number;
+  evidenceGroundingScore: number;
+  authorityBoundaryScore: number;
+  outputValidityScore: number;
+  overallScore: number;
+  provider: "mock" | "gemini";
+  evaluatedAt: string;
+}
