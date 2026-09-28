@@ -46,3 +46,18 @@ export interface RecoverySimulationResult {
     outcomes: RecoverySimulationOutcome[];
     simulatedAt: string;
 }
+
+export interface RecoveryPolicyValidation {
+    planId: string;
+    compliant: boolean;
+    violations: string[];
+}
+
+export interface RecoveryAnalysisResult {
+    incidentId: string;
+    incidentSeverity: Incident["severity"];
+    plans: RecoveryPlan[];
+    policyValidations: RecoveryPolicyValidation[];
+    simulation: RecoverySimulationResult;
+    analyzedAt: string;
+}
