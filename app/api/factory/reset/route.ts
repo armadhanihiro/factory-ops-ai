@@ -7,6 +7,7 @@ import { clearMaintenanceResults } from "@/lib/agents/maintenance/result-store";
 import { clearProductionResults } from "@/lib/agents/production/result-store";
 import { clearOrchestrationResults } from "@/lib/orchestrator/result-store";
 import { clearRecoveryPlannerResults } from "@/lib/agents/recovery-planner/result-store";
+import { clearDecisionSupportResults } from "@/lib/agents/decision-support/result-store";
 
 
 export async function POST() {
@@ -18,6 +19,7 @@ export async function POST() {
     clearProductionResults();
     clearOrchestrationResults();
     clearRecoveryPlannerResults();
+    clearDecisionSupportResults();
 
     return NextResponse.json({
         message: "Factory reset",
