@@ -7,11 +7,20 @@ import type { RecoveryPlannerContext } from "./types";
 
 const model = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
 
-const ai = new GoogleGenAI({
-    vertexai: true,
-    project: process.env.GOOGLE_CLOUD_PROJECT,
-    location: process.env.GOOGLE_CLOUD_LOCATION ?? "us-central1",
-});
+function createGeminiClient(): GoogleGenAI {
+    const project = process.env.GOOGLE_CLOUD_PROJECT;
+    const location = process.env.GOOGLE_CLOUD_LOCATION;
+
+    if (!project || !location) {
+        throw new Error("Google Cloud project and location are required for Gemini recovery planning");
+    }
+
+    return new GoogleGenAI({
+        vertexai: true,
+        project,
+        location,
+    });
+}
 
 const recoveryPlannerSchema = {
     type: Type.OBJECT,
@@ -183,6 +192,7 @@ function normalizePlans(plans: RecoveryPlan[], context: RecoveryPlannerContext):
 
 export class GeminiRecoveryPlannerProvider implements RecoveryPlannerProvider{
     async generatePlans(context: RecoveryPlannerContext): Promise<RecoveryPlan[]> {
+        const ai = createGeminiClient();
         const response = await ai.models.generateContent({
             model,
             contents: buildPrompt(context),

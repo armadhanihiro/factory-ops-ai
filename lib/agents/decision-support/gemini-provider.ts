@@ -10,11 +10,20 @@ import type {
 
 const model = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
 
-const ai = new GoogleGenAI({
-    vertexai: true,
-    project: process.env.GOOGLE_CLOUD_PROJECT,
-    location: process.env.GOOGLE_CLOUD_LOCATION ?? "us-central1",
-});
+function createGeminiClient(): GoogleGenAI {
+    const project = process.env.GOOGLE_CLOUD_PROJECT;
+    const location = process.env.GOOGLE_CLOUD_LOCATION;
+
+    if (!project || !location) {
+        throw new Error("Google Cloud project and location are required for Gemini decision support");
+    }
+
+    return new GoogleGenAI({
+        vertexai: true,
+        project,
+        location,
+    });
+}
 
 const decisionSupportSchema = {
     type: Type.OBJECT,
@@ -194,10 +203,8 @@ function validateTradeoffs(tradeoffs: PlanTradeoff[], context: DecisionSupportCo
 }
 
 export class GeminiDecisionSupportProvider implements DecisionSupportProvider{
-    async explainTradeoffs(context: DecisionSupportContext): Promise<{
-        planTradeoffs: PlanTradeoff[];
-        supervisorNote: string;
-    }> {
+    async explainTradeoffs(context: DecisionSupportContext): Promise<{ planTradeoffs: PlanTradeoff[]; supervisorNote: string; }> {
+        const ai = createGeminiClient();
         const response = await ai.models.generateContent({
             model,
             contents: buildPrompt(context),
