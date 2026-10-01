@@ -1,0 +1,35 @@
+import type { ActionExecutionResult } from "@/types/execution";
+import type { FactoryState } from "@/types/factory";
+import type { RecoveryAction } from "@/types/recovery";
+
+export function executePauseMachine(state: FactoryState, action: RecoveryAction, actionIndex: number): { state: FactoryState; result: ActionExecutionResult; } {
+    if (action.type !== "PAUSE_MACHINE") {
+        throw new Error("executePauseMachine received an incompatible action");
+    }
+
+    if (!action.machineId) {
+        throw new Error("PAUSE_MACHINE requires machineId");
+    }
+
+    const machine = state.machines.find((item) => item.id === action.machineId);
+
+    if (!machine) {
+        throw new Error(`Machine ${action.machineId} does not exist`);
+    }
+
+    const nextState: FactoryState = {
+        ...state,
+        machines: state.machines.map((item) => item.id === action.machineId ? { ...item,status: "IDLE" } : item),
+    };
+
+    return {
+        state: nextState,
+        result: {
+            actionIndex,
+            action,
+            status: "EXECUTED",
+            message: `Machine ${action.machineId} paused`,
+            executedAt: new Date().toISOString(),
+        },
+    };
+}

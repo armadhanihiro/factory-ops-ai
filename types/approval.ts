@@ -1,3 +1,5 @@
+import type { RecoveryPlan } from "@/types/recovery";
+
 export type ApprovalStatus =
     | "PENDING"
     | "APPROVED"
@@ -7,15 +9,20 @@ export interface RecoveryApproval {
     id: string;
     incidentId: string;
     planId: string;
+
+    /*
+     * Immutable snapshot of the exact recovery plan
+     * presented to and approved by the supervisor.
+     */
+    planSnapshot: RecoveryPlan;
     status: ApprovalStatus;
     requestedAt: string;
     decidedAt: string | null;
     supervisorNote: string | null;
 
     /*
-     * Snapshot identifiers used to make sure
-     * approval refers to the exact recovery
-     * analysis that was presented.
+     * References to the analysis and decision-support
+     * outputs presented during approval.
      */
     recoveryAnalyzedAt: string;
     decisionSupportGeneratedAt: string;

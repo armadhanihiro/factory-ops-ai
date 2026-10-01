@@ -21,12 +21,32 @@ function createPendingApproval(): RecoveryApproval {
         id: "APPROVAL-INC-001",
         incidentId: "INC-001",
         planId: "RECOVERY-INC-001-1",
+        planSnapshot: {
+            id: "RECOVERY-INC-001-1",
+            name: "Test Recovery Plan",
+            description: "Recovery plan used for approval workflow testing",
+            incidentId: "INC-001",
+            machineId: "M-02",
+            actions: [
+                {
+                    type: "PAUSE_MACHINE",
+                    machineId: "M-02",
+                    reasoning: "Pause the affected machine",
+                },
+                {
+                    type: "INSPECT_MACHINE",
+                    machineId: "M-02",
+                    reasoning: "Inspect the affected machine",
+                },
+            ],
+            rationale: "Test recovery plan for approval state transitions",
+        },
         status: "PENDING",
-        requestedAt: "2026-09-29T00:00:00.000Z",
+        requestedAt: "2026-09-28T00:00:00.000Z",
         decidedAt: null,
         supervisorNote: null,
-        recoveryAnalyzedAt: "2026-09-29T00:00:00.000Z",
-        decisionSupportGeneratedAt: "2026-09-29T00:00:01.000Z",
+        recoveryAnalyzedAt: "2026-09-28T00:00:00.000Z",
+        decisionSupportGeneratedAt: "2026-09-28T00:00:00.000Z",
     };
 }
 

@@ -48,6 +48,7 @@ export async function requestRecoveryApproval(incidentId: string, planId: string
         id: createApprovalId(incidentId),
         incidentId,
         planId,
+        planSnapshot: structuredClone(plan),
         status: "PENDING",
         requestedAt: new Date().toISOString(),
         decidedAt: null,

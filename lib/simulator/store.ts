@@ -45,3 +45,11 @@ export function startScenario(type: ScenarioType): FactoryState {
 export function resetFactory(): FactoryState {
     return setStore(createInitialFactoryState());
 }
+
+export function updateFactoryState(updater: (state: FactoryState) => FactoryState): FactoryState {
+    const currentState = getFactoryState();
+    const nextState = updater(currentState);
+    globalThis.factorySimulatorState = nextState;
+
+    return nextState;
+}
