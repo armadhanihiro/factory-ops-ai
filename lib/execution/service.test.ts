@@ -8,7 +8,10 @@ import {
 
 import type { RecoveryApproval } from "@/types/approval";
 import type { RecoveryExecution } from "@/types/execution";
-import type { RecoveryPlan } from "@/types/recovery";
+import type {
+    RecoveryPlan,
+    RecoverySimulationOutcome,
+} from "@/types/recovery";
 
 import {
     clearRecoveryApprovals,
@@ -79,6 +82,23 @@ function createApproval(status: RecoveryApproval["status"] = "APPROVED"): Recove
     };
 }
 
+function createPrediction(planId: string): RecoverySimulationOutcome {
+    return {
+        planId,
+        feasible: true,
+        constraintViolations: [],
+        productionMachineId: null,
+        productionCapacityPerHour: 0,
+        remainingUnits: 0,
+        estimatedProductionHours: null,
+        estimatedInterventionMinutes: null,
+        estimatedTotalRecoveryMinutes: null,
+        qualityHoldRequired: false,
+        machineInspectionRequired: false,
+        calculatedAt: "2026-10-01T00:01:30.000Z",
+    };
+}
+
 describe("executeRecoveryApproval", () => {
     beforeEach(() => {
         vi.clearAllMocks();
@@ -107,6 +127,9 @@ describe("executeRecoveryApproval", () => {
             planId: approval.planId,
             status: "COMPLETED",
             actionResults: [],
+            predictionSnapshot: createPrediction(approval.planId),
+            factoryStateBefore: structuredClone(before),
+            factoryStateAfter: structuredClone(resultingState),
             startedAt: "2026-10-01T00:02:00.000Z",
             completedAt: "2026-10-01T00:02:01.000Z",
         };
@@ -153,17 +176,20 @@ describe("executeRecoveryApproval", () => {
     it("prevents the same approval from executing twice", async () => {
         const approval = createApproval();
         saveRecoveryApproval(approval);
-        const existingExecution:
-            RecoveryExecution = {
-                id: `EXECUTION-${approval.id}`,
-                approvalId: approval.id,
-                incidentId: approval.incidentId,
-                planId: approval.planId,
-                status: "COMPLETED",
-                actionResults: [],
-                startedAt: "2026-10-01T00:02:00.000Z",
-                completedAt: "2026-10-01T00:02:01.000Z",
-            };
+        const state = structuredClone(getFactoryState());
+        const existingExecution: RecoveryExecution = {
+            id: `EXECUTION-${approval.id}`,
+            approvalId: approval.id,
+            incidentId: approval.incidentId,
+            planId: approval.planId,
+            status: "COMPLETED",
+            actionResults: [],
+            predictionSnapshot: createPrediction(approval.planId),
+            factoryStateBefore: structuredClone(state),
+            factoryStateAfter: structuredClone(state),
+            startedAt: "2026-10-01T00:02:00.000Z",
+            completedAt: "2026-10-01T00:02:01.000Z",
+        };
 
         saveRecoveryExecution(existingExecution);
 

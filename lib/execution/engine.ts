@@ -29,6 +29,15 @@ export async function executeApprovedRecoveryPlan(approval: RecoveryApproval, pl
         };
     }
 
+    if (!validation.prediction) {
+        return {
+            execution: null,
+            factoryState: currentState,
+            executed: false,
+            blockingReasons: ["Execution validation completed without a simulation prediction"],
+        };
+    }
+
     const startedAt = new Date().toISOString();
     let workingState = cloneFactoryState(currentState);
     const actionResults = [];
@@ -59,6 +68,9 @@ export async function executeApprovedRecoveryPlan(approval: RecoveryApproval, pl
         planId: plan.id,
         status: "COMPLETED",
         actionResults,
+        predictionSnapshot: structuredClone(validation.prediction),
+        factoryStateBefore: structuredClone(currentState),
+        factoryStateAfter: structuredClone(workingState),
         startedAt,
         completedAt,
     };

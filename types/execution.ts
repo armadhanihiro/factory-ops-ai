@@ -1,4 +1,8 @@
-import type { RecoveryAction } from "@/types/recovery";
+import type { FactoryState } from "@/types/factory";
+import type {
+    RecoveryAction,
+    RecoverySimulationOutcome,
+} from "@/types/recovery";
 
 export type ActionExecutionStatus =
     | "EXECUTED"
@@ -24,6 +28,9 @@ export interface RecoveryExecution {
     planId: string;
     status: RecoveryExecutionStatus;
     actionResults: ActionExecutionResult[];
+    predictionSnapshot: RecoverySimulationOutcome;
+    factoryStateBefore: FactoryState;
+    factoryStateAfter: FactoryState;
     startedAt: string;
     completedAt: string;
 }

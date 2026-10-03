@@ -7,8 +7,10 @@ import {
 } from "vitest";
 
 import type { RecoveryApproval } from "@/types/approval";
-import type { FactoryState } from "@/types/factory";
-import type { RecoveryPlan } from "@/types/recovery";
+import type {
+    RecoveryPlan,
+    RecoverySimulationOutcome,
+} from "@/types/recovery";
 
 import { resetFactory } from "@/lib/simulator/store";
 
@@ -44,6 +46,23 @@ function createPlan(): RecoveryPlan {
     };
 }
 
+function createPrediction(planId: string): RecoverySimulationOutcome {
+    return {
+        planId,
+        feasible: true,
+        constraintViolations: [],
+        productionMachineId: null,
+        productionCapacityPerHour: 0,
+        remainingUnits: 0,
+        estimatedProductionHours: null,
+        estimatedInterventionMinutes: null,
+        estimatedTotalRecoveryMinutes: null,
+        qualityHoldRequired: false,
+        machineInspectionRequired: false,
+        calculatedAt: "2026-10-03T00:00:00.000Z",
+    };
+}
+
 function createApproval(plan: RecoveryPlan): RecoveryApproval {
     return {
         id: "APPROVAL-INC-TEST",
@@ -65,13 +84,15 @@ describe("executeApprovedRecoveryPlan", () => {
     });
 
     it("executes every action against a working-state clone", async () => {
+        const plan = createPlan();
+
         mockedValidateBeforeExecution.mockResolvedValue({
             valid: true,
             blockingReasons: [],
+            prediction: createPrediction(plan.id),
         });
 
         const state = resetFactory();
-        const plan = createPlan();
         const approval = createApproval(plan);
         const originalState = structuredClone(state);
         const result = await executeApprovedRecoveryPlan(approval, plan, state);
@@ -91,6 +112,7 @@ describe("executeApprovedRecoveryPlan", () => {
         mockedValidateBeforeExecution.mockResolvedValue({
             valid: false,
             blockingReasons: ["Current-state constraint"],
+            prediction: null,
         });
 
         const state = resetFactory();
@@ -106,12 +128,6 @@ describe("executeApprovedRecoveryPlan", () => {
     });
 
     it("rolls back the complete working state when an action fails", async () => {
-        mockedValidateBeforeExecution.mockResolvedValue({
-            valid: true,
-            blockingReasons: [],
-        });
-
-        const state = resetFactory();
         const plan: RecoveryPlan = {
             ...createPlan(),
             actions: [
@@ -127,7 +143,14 @@ describe("executeApprovedRecoveryPlan", () => {
                 },
             ],
         };
+        
+        mockedValidateBeforeExecution.mockResolvedValue({
+            valid: true,
+            blockingReasons: [],
+            prediction: createPrediction(plan.id),
+        });
 
+        const state = resetFactory();
         const approval = createApproval(plan);
         const originalState = structuredClone(state);
         const result = await executeApprovedRecoveryPlan(approval, plan, state);
@@ -137,5 +160,26 @@ describe("executeApprovedRecoveryPlan", () => {
         expect(result.factoryState).toEqual(originalState);
         expect(state).toEqual(originalState);
         expect(result.blockingReasons[0]).toContain("Execution blocked:");
+    });
+
+    it("does not execute when validation has no simulation prediction", async () => {
+        const plan = createPlan();
+        const approval = createApproval(plan);
+        const state = resetFactory();
+        const originalState = structuredClone(state);
+
+        mockedValidateBeforeExecution.mockResolvedValue({
+            valid: true,
+            blockingReasons: [],
+            prediction: null,
+        });
+
+        const result = await executeApprovedRecoveryPlan(approval, plan, state);
+
+        expect(result.executed).toBe(false);
+        expect(result.execution).toBeNull();
+        expect(result.blockingReasons).toContain("Execution validation completed without a simulation prediction");
+        expect(result.factoryState).toEqual(originalState);
+        expect(state).toEqual(originalState);
     });
 });

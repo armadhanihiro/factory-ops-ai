@@ -1,6 +1,9 @@
 import type { RecoveryApproval } from "@/types/approval";
 import type { FactoryState } from "@/types/factory";
-import type { RecoveryPlan } from "@/types/recovery";
+import type {
+    RecoveryPlan,
+    RecoverySimulationOutcome,
+} from "@/types/recovery";
 
 import { createFreshOrchestration } from "@/lib/orchestrator/service";
 import { buildRecoverySimulationContext } from "@/lib/recovery/context-builder";
@@ -10,6 +13,7 @@ import { RecoverySimulator } from "@/lib/recovery/simulator";
 export interface PreExecutionValidation {
     valid: boolean;
     blockingReasons: string[];
+    prediction: RecoverySimulationOutcome | null;
 }
 
 export async function validateBeforeExecution(approval: RecoveryApproval, plan: RecoveryPlan, currentState: FactoryState): Promise<PreExecutionValidation> {
@@ -38,6 +42,7 @@ export async function validateBeforeExecution(approval: RecoveryApproval, plan: 
         return {
             valid: false,
             blockingReasons,
+            prediction: null,
         };
     }
 
@@ -47,6 +52,7 @@ export async function validateBeforeExecution(approval: RecoveryApproval, plan: 
         return {
             valid: false,
             blockingReasons: [`Incident ${approval.incidentId} no longer exists`],
+            prediction: null,
         };
     }
 
@@ -86,5 +92,6 @@ export async function validateBeforeExecution(approval: RecoveryApproval, plan: 
     return {
         valid: blockingReasons.length === 0,
         blockingReasons,
+        prediction: outcome ? structuredClone(outcome) : null,
     };
 }
