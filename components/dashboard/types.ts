@@ -65,10 +65,8 @@ export interface PublicFactoryState {
     totalOutput: number;
     averageUtilization: number;
     incidents: FactoryIncident[];
-    activeScenario?: {
-        type: string;
-        status: string;
-        targetMachineId: string;
+    simulation?: {
+        active: boolean;
         tick: number;
-    } | null;
+    };
 }

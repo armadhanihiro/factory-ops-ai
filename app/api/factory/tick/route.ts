@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 
-import { getFactoryState } from "@/lib/simulator/store";
+import { advanceFactory } from "@/lib/simulator/store";
 import { toPublicFactoryState } from "@/lib/simulator/public-state";
 
-export async function GET() {
-    const factoryState = getFactoryState();
+export async function POST() {
+    const factoryState = advanceFactory();
     return NextResponse.json(toPublicFactoryState(factoryState));
 }

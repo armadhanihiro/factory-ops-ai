@@ -69,7 +69,7 @@ export default function Home() {
 
     return (
         <div className="min-h-screen bg-[#080c12] text-slate-100">
-            <Header connected={!error && factory !== null} tick={factory?.activeScenario?.tick}/>
+            <Header connected={!error && factory !== null} tick={factory?.simulation?.tick}/>
 
             <main className="mx-auto max-w-[1600px] px-6 py-8 lg:px-8">
                 {loading && (
