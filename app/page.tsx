@@ -7,14 +7,18 @@ import {
 
 import { FactoryOverview } from "@/components/dashboard/FactoryOverview";
 import { Header } from "@/components/dashboard/Header";
-import type { PublicFactoryState } from "@/components/dashboard/types";
+import type { OrchestrationResult, PublicFactoryState } from "@/components/dashboard/types";
 import { ActiveIncident } from "@/components/dashboard/ActiveIncident";
 import { SimulationControls } from "@/components/dashboard/SimulationControls";
+import { AgentInvestigation } from "@/components/dashboard/AgentInvestigation";
 
 export default function Home() {
   const [factory, setFactory] = useState<PublicFactoryState | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [investigation, setInvestigation] = useState<OrchestrationResult | null>(null);
+  const [investigating, setInvestigating] = useState(false);
+  const [investigationError, setInvestigationError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -134,11 +138,49 @@ export default function Home() {
         throw new Error(`Factory reset returned ${response.status}`);
       }
 
+      setInvestigation(null);
+      setInvestigationError(null);
       await loadFactory();
     } catch (actionError) {
       setError(actionError instanceof Error ? actionError.message : "Failed to reset simulation");
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function investigateIncident() {
+    const activeIncident = factory?.incidents.find((incident) => incident.status !== "RESOLVED");
+
+    if (!activeIncident) {
+      setInvestigationError("No active incident available for investigation.");
+      return;
+    }
+
+    setInvestigating(true);
+    setInvestigationError(null);
+
+    try {
+      const response = await fetch(
+        `/api/orchestrate/${activeIncident.id}`,
+        {
+            method: "GET",
+            cache: "no-store",
+        },
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "Incident investigation failed.");
+      }
+
+      setInvestigation(data as OrchestrationResult);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Incident investigation failed.";
+
+      setInvestigationError(message);
+    } finally {
+      setInvestigating(false);
     }
   }
 
@@ -192,16 +234,13 @@ export default function Home() {
 
             <section className="grid gap-4 lg:grid-cols-[1.3fr_0.7fr]">
               <ActiveIncident incidents={factory.incidents}/>
-
-              <div className="min-h-64 rounded-2xl border border-white/10 bg-white/[0.025] p-6">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                  Agent Investigation
-                </p>
-
-                <p className="mt-8 text-sm text-slate-600">
-                  Cross-functional agent analysis will appear here.
-                </p>
-              </div>
+              <AgentInvestigation
+                incident={factory.incidents.find((incident) => incident.status !== "RESOLVED") ?? null}
+                result={investigation}
+                investigating={investigating}
+                error={investigationError}
+                onInvestigate={investigateIncident}
+              />
             </section>
           </div>
         )}
