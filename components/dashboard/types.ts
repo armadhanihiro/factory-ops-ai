@@ -48,8 +48,8 @@ export interface AnomalySignal {
 export interface FactoryIncident {
     id: string;
     machineId: string;
-    status: string;
-    severity: string;
+    status: "OPEN" | "INVESTIGATING" | "MITIGATING" | "RESOLVED";
+    severity: "NORMAL" | "WARNING" | "HIGH" | "CRITICAL";
     detectedAt: string;
     updatedAt: string;
     trigger: {
