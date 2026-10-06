@@ -163,9 +163,9 @@ function buildPrompt(context: RecoveryPlannerContext): string {
         5. Do not execute or claim that any operational action has already occurred.
         6. PAUSE_MACHINE, INSPECT_MACHINE, and CONTINUE_PRODUCTION must target the affected machine.
         7. REROUTE_ORDER must:
-            - originate from the affected machine
-            - target the affected order
-            - use only a supplied production alternative
+            - set machineId to the affected machine
+            - set orderId to the affected order
+            - set targetMachineId to one of the supplied production alternatives
         8. HOLD_OUTPUT must target the affected order.
         9. Do not treat a maintenance recommendation as proof that the machine has already stopped or changed status.
         10. Produce distinct strategies with meaningful operational trade-offs when supported by the supplied evidence.
@@ -187,6 +187,31 @@ function normalizePlans(plans: RecoveryPlan[], context: RecoveryPlannerContext):
         id: `RECOVERY-${context.incidentId}-${index + 1}`,
         incidentId: context.incidentId,
         machineId: context.machineId,
+
+        actions: plan.actions.map((action) => {
+            switch (action.type) {
+                case "PAUSE_MACHINE":
+                case "INSPECT_MACHINE":
+                case "CONTINUE_PRODUCTION":
+                    return {
+                        ...action,
+                        machineId: context.machineId,
+                    };
+
+                case "HOLD_OUTPUT":
+                    return {
+                        ...action,
+                        orderId: context.affectedOrderId ?? undefined,
+                    };
+
+                case "REROUTE_ORDER":
+                    return {
+                        ...action,
+                        machineId: context.machineId,
+                        orderId: context.affectedOrderId ?? undefined,
+                    };
+            }
+        }),
     }));
 }
 
