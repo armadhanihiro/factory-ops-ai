@@ -7,10 +7,11 @@ import {
 
 import { FactoryOverview } from "@/components/dashboard/FactoryOverview";
 import { Header } from "@/components/dashboard/Header";
-import type { OrchestrationResult, PublicFactoryState } from "@/components/dashboard/types";
+import type { OrchestrationResult, PublicFactoryState, RecoveryAnalysisResult } from "@/components/dashboard/types";
 import { ActiveIncident } from "@/components/dashboard/ActiveIncident";
 import { SimulationControls } from "@/components/dashboard/SimulationControls";
 import { AgentInvestigation } from "@/components/dashboard/AgentInvestigation";
+import { RecoveryPlanning } from "@/components/dashboard/RecoveryPlanning";
 
 export default function Home() {
   const [factory, setFactory] = useState<PublicFactoryState | null>(null);
@@ -19,6 +20,9 @@ export default function Home() {
   const [investigation, setInvestigation] = useState<OrchestrationResult | null>(null);
   const [investigating, setInvestigating] = useState(false);
   const [investigationError, setInvestigationError] = useState<string | null>(null);
+  const [recoveryAnalysis, setRecoveryAnalysis] = useState<RecoveryAnalysisResult | null>(null);
+  const [analyzingRecovery, setAnalyzingRecovery] = useState(false);
+  const [recoveryError, setRecoveryError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -140,6 +144,8 @@ export default function Home() {
 
       setInvestigation(null);
       setInvestigationError(null);
+      setRecoveryAnalysis(null);
+      setRecoveryError(null);
       await loadFactory();
     } catch (actionError) {
       setError(actionError instanceof Error ? actionError.message : "Failed to reset simulation");
@@ -158,6 +164,8 @@ export default function Home() {
 
     setInvestigating(true);
     setInvestigationError(null);
+    setRecoveryAnalysis(null);
+    setRecoveryError(null);
 
     try {
       const response = await fetch(
@@ -181,6 +189,39 @@ export default function Home() {
       setInvestigationError(message);
     } finally {
       setInvestigating(false);
+    }
+  }
+
+  async function analyzeRecovery() {
+    if (!investigation) {
+      setRecoveryError("Complete the incident investigation first.");
+      return;
+    }
+
+    setAnalyzingRecovery(true);
+    setRecoveryError(null);
+
+    try {
+      const response = await fetch(
+        `/api/recovery/${investigation.incidentId}/analysis`,
+        {
+            method: "GET",
+            cache: "no-store",
+        },
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "Recovery analysis failed.");
+      }
+
+      setRecoveryAnalysis(data as RecoveryAnalysisResult);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Recovery analysis failed.";
+      setRecoveryError(message);
+    } finally {
+      setAnalyzingRecovery(false);
     }
   }
 
@@ -242,6 +283,14 @@ export default function Home() {
                 onInvestigate={investigateIncident}
               />
             </section>
+
+            <RecoveryPlanning
+              result={recoveryAnalysis}
+              analyzing={analyzingRecovery}
+              error={recoveryError}
+              investigationComplete={investigation?.status === "COMPLETED"}
+              onAnalyze={analyzeRecovery}
+            />
           </div>
         )}
       </main>
