@@ -7,11 +7,12 @@ import {
 
 import { FactoryOverview } from "@/components/dashboard/FactoryOverview";
 import { Header } from "@/components/dashboard/Header";
-import type { OrchestrationResult, PublicFactoryState, RecoveryAnalysisResult } from "@/components/dashboard/types";
+import type { OrchestrationResult, PublicFactoryState, RecoveryAnalysisResult, DecisionSupportResult } from "@/components/dashboard/types";
 import { ActiveIncident } from "@/components/dashboard/ActiveIncident";
 import { SimulationControls } from "@/components/dashboard/SimulationControls";
 import { AgentInvestigation } from "@/components/dashboard/AgentInvestigation";
 import { RecoveryPlanning } from "@/components/dashboard/RecoveryPlanning";
+import DecisionSupport from "@/components/dashboard/DecisionSupport";
 
 export default function Home() {
   const [factory, setFactory] = useState<PublicFactoryState | null>(null);
@@ -23,6 +24,9 @@ export default function Home() {
   const [recoveryAnalysis, setRecoveryAnalysis] = useState<RecoveryAnalysisResult | null>(null);
   const [analyzingRecovery, setAnalyzingRecovery] = useState(false);
   const [recoveryError, setRecoveryError] = useState<string | null>(null);
+  const [decisionSupport, setDecisionSupport] = useState<DecisionSupportResult | null>(null);
+  const [generatingDecisionSupport, setGeneratingDecisionSupport] = useState(false);
+  const [decisionSupportError, setDecisionSupportError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -146,6 +150,9 @@ export default function Home() {
       setInvestigationError(null);
       setRecoveryAnalysis(null);
       setRecoveryError(null);
+      setDecisionSupport(null);
+      setDecisionSupportError(null);
+
       await loadFactory();
     } catch (actionError) {
       setError(actionError instanceof Error ? actionError.message : "Failed to reset simulation");
@@ -166,6 +173,8 @@ export default function Home() {
     setInvestigationError(null);
     setRecoveryAnalysis(null);
     setRecoveryError(null);
+    setDecisionSupport(null);
+    setDecisionSupportError(null);
 
     try {
       const response = await fetch(
@@ -222,6 +231,39 @@ export default function Home() {
       setRecoveryError(message);
     } finally {
       setAnalyzingRecovery(false);
+    }
+  }
+
+  async function generateDecisionSupport() {
+    if (!recoveryAnalysis) {
+      setDecisionSupportError("Generate recovery plans first.");
+      return;
+    }
+
+    setGeneratingDecisionSupport(true);
+    setDecisionSupportError(null);
+
+    try {
+      const response = await fetch(
+        `/api/recovery/${recoveryAnalysis.incidentId}/decision-support`,
+        {
+          method: "GET",
+          cache: "no-store",
+        },
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "Decision support generation failed.");
+      }
+
+      setDecisionSupport(data as DecisionSupportResult);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Decision support generation failed.";
+      setDecisionSupportError(message);
+    } finally {
+      setGeneratingDecisionSupport(false);
     }
   }
 
@@ -290,6 +332,14 @@ export default function Home() {
               error={recoveryError}
               investigationComplete={investigation?.status === "COMPLETED"}
               onAnalyze={analyzeRecovery}
+            />
+
+            <DecisionSupport
+              result={decisionSupport}
+              recoveryAnalysis={recoveryAnalysis}
+              loading={generatingDecisionSupport}
+              error={decisionSupportError}
+              onGenerate={generateDecisionSupport}
             />
           </div>
         )}
