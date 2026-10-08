@@ -7,12 +7,13 @@ import {
 
 import { FactoryOverview } from "@/components/dashboard/FactoryOverview";
 import { Header } from "@/components/dashboard/Header";
-import type { OrchestrationResult, PublicFactoryState, RecoveryAnalysisResult, DecisionSupportResult } from "@/components/dashboard/types";
+import type { OrchestrationResult, PublicFactoryState, RecoveryAnalysisResult, DecisionSupportResult, RecoveryApproval } from "@/components/dashboard/types";
 import { ActiveIncident } from "@/components/dashboard/ActiveIncident";
 import { SimulationControls } from "@/components/dashboard/SimulationControls";
 import { AgentInvestigation } from "@/components/dashboard/AgentInvestigation";
 import { RecoveryPlanning } from "@/components/dashboard/RecoveryPlanning";
 import DecisionSupport from "@/components/dashboard/DecisionSupport";
+import SupervisorApproval from "@/components/dashboard/SupervisorApproval";
 
 export default function Home() {
   const [factory, setFactory] = useState<PublicFactoryState | null>(null);
@@ -27,6 +28,9 @@ export default function Home() {
   const [decisionSupport, setDecisionSupport] = useState<DecisionSupportResult | null>(null);
   const [generatingDecisionSupport, setGeneratingDecisionSupport] = useState(false);
   const [decisionSupportError, setDecisionSupportError] = useState<string | null>(null);
+  const [approval, setApproval] = useState<RecoveryApproval | null>(null);
+  const [approvalBusy, setApprovalBusy] = useState(false);
+  const [approvalError, setApprovalError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -152,6 +156,8 @@ export default function Home() {
       setRecoveryError(null);
       setDecisionSupport(null);
       setDecisionSupportError(null);
+      setApproval(null);
+      setApprovalError(null);
 
       await loadFactory();
     } catch (actionError) {
@@ -162,6 +168,11 @@ export default function Home() {
   }
 
   async function investigateIncident() {
+    if (approval) {
+      setApprovalError("An approval request already exists. Reset the simulation before starting a new investigation or recovery analysis.");
+      return;
+    }
+
     const activeIncident = factory?.incidents.find((incident) => incident.status !== "RESOLVED");
 
     if (!activeIncident) {
@@ -175,6 +186,8 @@ export default function Home() {
     setRecoveryError(null);
     setDecisionSupport(null);
     setDecisionSupportError(null);
+    setApproval(null);
+    setApprovalError(null);
 
     try {
       const response = await fetch(
@@ -202,6 +215,11 @@ export default function Home() {
   }
 
   async function analyzeRecovery() {
+    if (approval) {
+      setApprovalError("An approval request already exists. Reset the simulation before starting a new investigation or recovery analysis.");
+      return;
+    }
+
     if (!investigation) {
       setRecoveryError("Complete the incident investigation first.");
       return;
@@ -209,6 +227,10 @@ export default function Home() {
 
     setAnalyzingRecovery(true);
     setRecoveryError(null);
+    setDecisionSupport(null);
+    setDecisionSupportError(null);
+    setApproval(null);
+    setApprovalError(null);
 
     try {
       const response = await fetch(
@@ -264,6 +286,80 @@ export default function Home() {
       setDecisionSupportError(message);
     } finally {
       setGeneratingDecisionSupport(false);
+    }
+  }
+
+  async function requestApproval(planId: string) {
+    if (!recoveryAnalysis || !decisionSupport) {
+      setApprovalError("Complete Decision Support before requesting approval.");
+      return;
+    }
+
+    setApprovalBusy(true);
+    setApprovalError(null);
+
+    try {
+      const response = await fetch(
+        `/api/recovery/${recoveryAnalysis.incidentId}/approval`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ planId }),
+        },
+      );
+
+      const data = await response.json();
+
+      if (!response.ok || !data.eligibleForApproval || !data.approval) {
+        const reasons = Array.isArray(data.blockingReasons) ? data.blockingReasons.join("; ") : null;
+        throw new Error(reasons || data.error || "Approval request failed.");
+      }
+
+      setApproval(data.approval as RecoveryApproval);
+    } catch (error) {
+      setApprovalError(error instanceof Error ? error.message : "Approval request failed.");
+    } finally {
+      setApprovalBusy(false);
+    }
+  }
+
+  async function decideApproval(decision: "APPROVE" | "REJECT", supervisorNote: string) {
+    if (!approval || approval.status !== "PENDING") {
+      setApprovalError("No pending approval request available.");
+      return;
+    }
+
+    setApprovalBusy(true);
+    setApprovalError(null);
+
+    try {
+      const response = await fetch(
+        `/api/recovery/approvals/${approval.id}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            decision,
+            supervisorNote,
+          }),
+        },
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "Failed to process supervisor decision.");
+      }
+
+      setApproval(data as RecoveryApproval);
+    } catch (error) {
+      setApprovalError(error instanceof Error ? error.message : "Failed to process supervisor decision.");
+    } finally {
+      setApprovalBusy(false);
     }
   }
 
@@ -340,6 +436,16 @@ export default function Home() {
               loading={generatingDecisionSupport}
               error={decisionSupportError}
               onGenerate={generateDecisionSupport}
+            />
+
+            <SupervisorApproval
+              recoveryAnalysis={recoveryAnalysis}
+              decisionSupport={decisionSupport}
+              approval={approval}
+              busy={approvalBusy}
+              error={approvalError}
+              onRequestApproval={requestApproval}
+              onDecide={decideApproval}
             />
           </div>
         )}
