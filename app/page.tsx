@@ -7,13 +7,23 @@ import {
 
 import { FactoryOverview } from "@/components/dashboard/FactoryOverview";
 import { Header } from "@/components/dashboard/Header";
-import type { OrchestrationResult, PublicFactoryState, RecoveryAnalysisResult, DecisionSupportResult, RecoveryApproval } from "@/components/dashboard/types";
+import type { 
+  OrchestrationResult, 
+  PublicFactoryState, 
+  RecoveryAnalysisResult, 
+  DecisionSupportResult, 
+  RecoveryApproval,
+  RecoveryExecution as RecoveryExecutionRecord,
+  RecoveryExecutionResult,
+} from "@/components/dashboard/types";
 import { ActiveIncident } from "@/components/dashboard/ActiveIncident";
 import { SimulationControls } from "@/components/dashboard/SimulationControls";
 import { AgentInvestigation } from "@/components/dashboard/AgentInvestigation";
 import { RecoveryPlanning } from "@/components/dashboard/RecoveryPlanning";
+
 import DecisionSupport from "@/components/dashboard/DecisionSupport";
 import SupervisorApproval from "@/components/dashboard/SupervisorApproval";
+import RecoveryExecution from "@/components/dashboard/RecoveryExecution";
 
 export default function Home() {
   const [factory, setFactory] = useState<PublicFactoryState | null>(null);
@@ -31,6 +41,10 @@ export default function Home() {
   const [approval, setApproval] = useState<RecoveryApproval | null>(null);
   const [approvalBusy, setApprovalBusy] = useState(false);
   const [approvalError, setApprovalError] = useState<string | null>(null);
+  const [execution, setExecution] = useState<RecoveryExecutionRecord | null>(null);
+  const [executionBusy, setExecutionBusy] = useState(false);
+  const [executionError, setExecutionError] = useState<string | null>(null);
+  const [executionBlockingReasons, setExecutionBlockingReasons] = useState<string[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -158,6 +172,9 @@ export default function Home() {
       setDecisionSupportError(null);
       setApproval(null);
       setApprovalError(null);
+      setExecution(null);
+      setExecutionError(null);
+      setExecutionBlockingReasons([]);
 
       await loadFactory();
     } catch (actionError) {
@@ -188,6 +205,9 @@ export default function Home() {
     setDecisionSupportError(null);
     setApproval(null);
     setApprovalError(null);
+    setExecution(null);
+    setExecutionError(null);
+    setExecutionBlockingReasons([]);
 
     try {
       const response = await fetch(
@@ -231,6 +251,9 @@ export default function Home() {
     setDecisionSupportError(null);
     setApproval(null);
     setApprovalError(null);
+    setExecution(null);
+    setExecutionError(null);
+    setExecutionBlockingReasons([]);
 
     try {
       const response = await fetch(
@@ -363,6 +386,57 @@ export default function Home() {
     }
   }
 
+  async function executeRecovery() {
+    if (!approval || approval.status !== "APPROVED" || execution || executionBusy) {
+      setExecutionError("An approved, unexecuted plan is required.");
+      return;
+    }
+
+    setExecutionBusy(true);
+    setExecutionError(null);
+    setExecutionBlockingReasons([]);
+
+    try {
+      const response = await fetch(
+        `/api/recovery/approvals/${approval.id}/execute`,
+        {
+          method: "POST",
+        },
+      );
+
+      const data = await response.json();
+
+      if (!response.ok || data.executed !== true || !data.execution) {
+        const result = data as Partial<RecoveryExecutionResult> & {
+          error?: string;
+        };
+
+        if (result.blockingReasons?.length) {
+          setExecutionBlockingReasons(result.blockingReasons);
+        } else {
+          setExecutionError(result.error ?? "Recovery execution failed.");
+        }
+
+        return;
+      }
+
+      const result = data as RecoveryExecutionResult;
+
+      if (!result.execution) {
+        throw new Error("Execution succeeded without an audit record.");
+      }
+
+      setExecution(result.execution);
+
+      // Read the committed factory state from the backend.
+      await loadFactory();
+    } catch (error) {
+      setExecutionError(error instanceof Error ? error.message : "Failed to execute recovery plan.");
+    } finally {
+      setExecutionBusy(false);
+    }
+  }
+
   const loading = factory === null && error === null;
 
   return (
@@ -446,6 +520,15 @@ export default function Home() {
               error={approvalError}
               onRequestApproval={requestApproval}
               onDecide={decideApproval}
+            />
+
+            <RecoveryExecution
+              approval={approval}
+              execution={execution}
+              busy={executionBusy}
+              error={executionError}
+              blockingReasons={executionBlockingReasons}
+              onExecute={executeRecovery}
             />
           </div>
         )}

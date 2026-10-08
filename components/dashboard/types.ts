@@ -259,3 +259,36 @@ export interface ApprovalRequestResult {
     eligibleForApproval: boolean;
     blockingReasons: string[];
 }
+
+export type ActionExecutionStatus = "EXECUTED" | "FAILED";
+
+export interface ActionExecutionResult {
+    actionIndex: number;
+    action: RecoveryAction;
+    status: ActionExecutionStatus;
+    message: string;
+    executedAt: string;
+}
+
+export type RecoveryExecutionStatus =
+    | "COMPLETED"
+    | "PARTIALLY_COMPLETED"
+    | "FAILED";
+
+export interface RecoveryExecution {
+    id: string;
+    approvalId: string;
+    incidentId: string;
+    planId: string;
+    status: RecoveryExecutionStatus;
+    actionResults: ActionExecutionResult[];
+    predictionSnapshot: RecoverySimulationOutcome;
+    startedAt: string;
+    completedAt: string;
+}
+
+export interface RecoveryExecutionResult {
+    execution: RecoveryExecution | null;
+    executed: boolean;
+    blockingReasons: string[];
+}
