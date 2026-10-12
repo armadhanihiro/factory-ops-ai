@@ -6,6 +6,8 @@ import type { RecoveryApproval } from "@/types/approval";
 import { executeRecoveryAction } from "./execute-action";
 import { validateBeforeExecution } from "./pre-execution-validator";
 
+import { reconcileRecoveryTelemetry } from "@/lib/simulator/telemetry";
+
 export interface RecoveryExecutionResult {
     execution: RecoveryExecution | null;
     factoryState: FactoryState;
@@ -59,6 +61,7 @@ export async function executeApprovedRecoveryPlan(approval: RecoveryApproval, pl
         };
     }
 
+    workingState = reconcileRecoveryTelemetry(workingState);
     const completedAt = new Date().toISOString();
 
     const execution: RecoveryExecution = {

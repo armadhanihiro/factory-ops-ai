@@ -77,3 +77,29 @@ export function tickFactory(state: FactoryState): FactoryState {
 
     return nextState;
 }
+
+export function reconcileRecoveryTelemetry(state: FactoryState): FactoryState {
+    const timestamp = new Date().toISOString();
+    const machines = state.machines.map((machine) => {
+        const outputRate = machine.status === "RUNNING" && machine.currentOrderId ? machine.telemetry.outputRate > 0
+                        ? Math.min(machine.telemetry.outputRate, machine.capacity) : machine.capacity : machine.status === "RUNNING" && !machine.currentOrderId
+                        ? machine.telemetry.outputRate : 0;
+
+        return {
+            ...machine,
+            telemetry: {
+                ...machine.telemetry,
+                timestamp,
+                outputRate,
+            },
+        };
+    });
+
+    return {
+        ...state,
+        timestamp,
+        machines,
+        totalOutput: calculateTotalOutput(machines),
+        averageUtilization: calculateAverageUtilization(machines),
+    };
+}

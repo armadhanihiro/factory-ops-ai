@@ -106,7 +106,7 @@ export function calculateTotalOutput(machines: Machine[]): number {
 }
 
 export function calculateAverageUtilization(machines: Machine[]): number {
-    const activeProductionMachines = machines.filter((machine) => machine.status !== "IDLE",);
+    const activeProductionMachines = machines.filter((machine) => machine.status === "RUNNING");
 
     if (activeProductionMachines.length === 0) {
         return 0;
