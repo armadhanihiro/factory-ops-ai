@@ -38,6 +38,8 @@ export type IncidentStatus =
     | "MITIGATING"
     | "RESOLVED";
 
+export type OutputSource = "SIMULATED" | "ESTIMATED";
+
 export interface IncidentTrigger {
     anomalyScore: number;
     signals: AnomalySignal[];
@@ -93,6 +95,7 @@ export interface MachineTelemetry {
     motorCurrent: number;
     pressure?: number;
     outputRate: number;
+    outputSource?: OutputSource;
     defectRate?: number;
 }
 

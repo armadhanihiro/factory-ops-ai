@@ -34,12 +34,14 @@ function simulateTelemetry(machine: Machine): MachineTelemetry {
             ...current,
             timestamp: new Date().toISOString(),
             outputRate: 0,
+            outputSource: "SIMULATED" as const,
         };
     }
 
     return {
         ...current,
         timestamp: new Date().toISOString(),
+        outputSource: "SIMULATED" as const,
         temperature: Number(clamp(fluctuate(current.temperature, 0.8), 20, 120).toFixed(1)),
         vibration: current.vibration !== undefined ? Number(clamp(fluctuate(current.vibration, 0.15), 0, 20).toFixed(2)) : undefined,
         motorCurrent: Number(clamp( fluctuate(current.motorCurrent, 1), 0, 100).toFixed(1)),
@@ -85,12 +87,16 @@ export function reconcileRecoveryTelemetry(state: FactoryState): FactoryState {
                         ? Math.min(machine.telemetry.outputRate, machine.capacity) : machine.capacity : machine.status === "RUNNING" && !machine.currentOrderId
                         ? machine.telemetry.outputRate : 0;
 
+        const outputSource = machine.status !== "RUNNING" ? "SIMULATED" as const : machine.currentOrderId && machine.telemetry.outputRate <= 0
+                        ? "ESTIMATED" as const : machine.telemetry.outputSource ?? "SIMULATED";
+
         return {
             ...machine,
             telemetry: {
                 ...machine.telemetry,
                 timestamp,
                 outputRate,
+                outputSource,
             },
         };
     });

@@ -6,6 +6,7 @@ export interface MachineTelemetry {
     motorCurrent?: number;
     pressure?: number;
     outputRate?: number;
+    outputSource?: "SIMULATED" | "ESTIMATED";
     defectRate?: number;
 }
 

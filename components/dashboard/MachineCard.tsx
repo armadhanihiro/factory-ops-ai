@@ -51,7 +51,10 @@ export function MachineCard({ machine }: MachineCardProps) {
             </div>
 
             <div className="mt-6 grid grid-cols-2 gap-3">
-                <Metric label="Output" value={formatMetric(machine.telemetry.outputRate, "/h")}/>
+                <Metric
+                    label={machine.telemetry.outputSource === "ESTIMATED" ? "Output (Est.)" : "Output (Sim.)"}
+                    value={formatMetric(machine.telemetry.outputRate, "/h")}
+                />
                 <Metric label="Temperature" value={formatMetric(machine.telemetry.temperature, "°C")}/>
                 <Metric label="Vibration" value={formatMetric(machine.telemetry.vibration, "")}/>
                 <Metric label="Load" value={machine.currentOrderId ?? "No active order"}

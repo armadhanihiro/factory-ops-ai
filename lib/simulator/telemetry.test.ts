@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest";
 
 import { createInitialFactoryState } from "./factory";
-import { reconcileRecoveryTelemetry } from "./telemetry";
+import { reconcileRecoveryTelemetry, tickFactory } from "./telemetry";
 
 describe("reconcileRecoveryTelemetry", () => {
     it("reconciles output and KPIs after an order reroute", () => {
@@ -35,6 +35,7 @@ describe("reconcileRecoveryTelemetry", () => {
         expect(reconciledTarget?.currentOrderId).toBe("ORD-428");
         expect(reconciledTarget?.telemetry.outputRate).toBe(100);
         expect(result.orders.find((o) => o.id === "ORD-428") ?.assignedMachineId).toBe("M-03");
+        expect(reconciledTarget?.telemetry.outputSource).toBe("ESTIMATED");
         expect(result.totalOutput).toBe(337);
         expect(result.averageUtilization).toBe(88);
         expect(state).toEqual(beforeReconciliation);
@@ -65,5 +66,24 @@ describe("reconcileRecoveryTelemetry", () => {
         const result = reconcileRecoveryTelemetry(state);
 
         expect(result.machines.find((m) => m.id === "M-03") ?.telemetry.outputRate).toBe(100);
+    });
+
+    it("changes estimated output to simulated after the next tick", () => {
+        const state = createInitialFactoryState();
+        const target = state.machines.find((machine) => machine.id === "M-03");
+
+        if (!target) {
+            throw new Error("Machine M-03 not found");
+        }
+
+        target.status = "RUNNING";
+        target.currentOrderId = "ORD-428";
+        const reconciled = reconcileRecoveryTelemetry(state);
+
+        expect(reconciled.machines.find((m) => m.id === "M-03") ?.telemetry.outputSource).toBe("ESTIMATED");
+        
+        const ticked = tickFactory(reconciled);
+
+        expect(ticked.machines.find((m) => m.id === "M-03") ?.telemetry.outputSource).toBe("SIMULATED");
     });
 });
