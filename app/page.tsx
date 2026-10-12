@@ -24,6 +24,7 @@ import { RecoveryPlanning } from "@/components/dashboard/RecoveryPlanning";
 import DecisionSupport from "@/components/dashboard/DecisionSupport";
 import SupervisorApproval from "@/components/dashboard/SupervisorApproval";
 import RecoveryExecution from "@/components/dashboard/RecoveryExecution";
+import RecoveryEvaluation from "@/components/dashboard/RecoveryEvaluation";
 
 export default function Home() {
   const [factory, setFactory] = useState<PublicFactoryState | null>(null);
@@ -529,6 +530,11 @@ export default function Home() {
               error={executionError}
               blockingReasons={executionBlockingReasons}
               onExecute={executeRecovery}
+            />
+
+            <RecoveryEvaluation
+              key={execution?.id ?? "no-execution"}
+              executionId={execution?.id ?? null}
             />
           </div>
         )}
